@@ -265,12 +265,19 @@ def get_args(argv=None):
 def main():
     args = get_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    primary_template = [
-        (
-            "primary.json",
-            common.template_to_json(create_primary_template()).encode("utf-8"),
-        )
-    ]
-    for filename, content in itertools.chain(primary_template, common.template_registry.items()):
-        with (args.output_dir / filename).open("wb") as f:
+    primary_template = create_primary_template()
+    all_templates = itertools.chain(
+        [
+            (
+                f"{common.hash_template(primary_template)}.json",
+                common.template_to_json(primary_template).encode("utf-8"),
+            ),
+        ],
+        common.template_registry.items(),
+    )
+    for idx, (filename, content) in enumerate(all_templates):
+        destination = args.output_dir / filename
+        with destination.open("wb") as f:
             f.write(content)
+        if idx == 0:
+            print(destination.resolve())

@@ -65,13 +65,14 @@ let
   };
 
   templates = pkgs.runCommand "cloudformation-templates" { } ''
-    ${interpreter}/bin/lambdaplatform-generate-templates --output-dir $out
+    mkdir -p $out/templates
+    ln -s $(${interpreter}/bin/lambdaplatform-generate-templates --output-dir $out/templates) $out/primary_template
   '';
 
   deploy = pkgs.writeShellScript "deploy" ''
     export PATH=${pkgs.skopeo}/bin:$PATH
-    export LAMBDAPLATFORM_TEMPLATE_PATH=${templates}
-    export LAMBDAPLATFORM_PRIMARY_TEMPLATE_PATH=${templates}/primary.json
+    export LAMBDAPLATFORM_TEMPLATE_PATH=${templates}/templates
+    export LAMBDAPLATFORM_PRIMARY_TEMPLATE_PATH=$(readlink ${templates}/primary_template)
     export LAMBDAPLATFORM_IMAGE_GENERATOR=${image}
     exec ${interpreter}/bin/lambdaplatform-deploy $@
   '';

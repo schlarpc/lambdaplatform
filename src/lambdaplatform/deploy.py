@@ -30,7 +30,7 @@ def get_args():
     )
     parser.add_argument(
         "--primary-template-path",
-        help="CloudFormation template used for root stack",
+        help="Path to CloudFormation template used for root stack",
         type=pathlib.Path,
         **env_default("PRIMARY_TEMPLATE_PATH"),
     )
@@ -88,7 +88,7 @@ def main():
     cloudformation = session.client("cloudformation")
     if not stack_exists(cloudformation, args.stack_name):
         print("Creating CloudFormation stack to bootstrap")
-        with open(args.primary_template_path, "r") as f:
+        with args.primary_template_path.open("r") as f:
             response = cloudformation.create_stack(
                 StackName=args.stack_name,
                 TemplateBody=f.read(),
@@ -156,9 +156,10 @@ def main():
         )
 
     print("Updating CloudFormation stack")
+    s3_artifact_path = args.primary_template_path.relative_to(args.template_path)
     response = cloudformation.update_stack(
         StackName=args.stack_name,
-        TemplateURL=f"https://{outputs['ArtifactBucket']}.s3.amazonaws.com/primary.json",
+        TemplateURL=f"https://{outputs['ArtifactBucket']}.s3.amazonaws.com/{s3_artifact_path}",
         Parameters=[
             {
                 "ParameterKey": "ImageDigest",
