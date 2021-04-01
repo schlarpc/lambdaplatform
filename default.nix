@@ -1,7 +1,16 @@
 { pkgs ? (import <nixpkgs> { }) }:
 let
 
-  extraPythonPackages = ps:
+  baseInterpreter = pkgs.python3;
+
+  # modification of python packages in nixpkgs
+  pyPackageOverrides = self: super: { };
+
+  # inclusion of python packages in nixpkgs
+  pyPackages = ps: with ps; [ ];
+
+  # addition of python packages not included in nixpkgs
+  pyPackageExtras = ps:
     with ps; rec {
       awacs = (buildPythonPackage rec {
         pname = "awacs";
@@ -36,8 +45,10 @@ let
       });
     };
 
-  interpreter = pkgs.python3.withPackages
-    (ps: pkgs.lib.attrValues (extraPythonPackages ps));
+  interpreter = (baseInterpreter.override {
+    packageOverrides = pyPackageOverrides;
+  }).withPackages
+    (ps: (pyPackages ps) ++ pkgs.lib.attrValues (pyPackageExtras ps));
 
   image = pkgs.dockerTools.streamLayeredImage {
     name = "lambda-image";
